@@ -44,10 +44,10 @@
             @{
                 var Counterparty = (editContext as CounterpartyModel);
                 var IdValue = (Counterparty!.Id).ToString() ?? string.Empty;
-                
+
                 <FluentValidator TValidator="CounterpartyValidator" />
                 <ValidationSummary />
-                
+
                 <span class="error">@ErrorDialodDetails</span>
 
                 <div>
@@ -88,7 +88,7 @@
                                             @bind-Value="@(Counterparty.FormOfOwnership)">
                                 <DropDownListFieldSettings Text="Text" Value="Value"></DropDownListFieldSettings>
                             </SfDropDownList>
-                            
+
                         </div>
                     </div>
                     <div class="row">
@@ -138,9 +138,8 @@
         <DetailTemplate Context="detailContext">
             @{
                 var counterparty = (detailContext as CounterpartyModel);
-                CurrentCounterpartyId = counterparty?.Id;
             }
-        
+
             <div style="padding:20px">
                 <SfTab>
                     <TabItems>
@@ -149,7 +148,7 @@
                                 <TabHeader Text="Details"></TabHeader>
                             </ChildContent>
                             <ContentTemplate>
-                                    <div style="display:inline-flex">
+                                <div style="display:inline-flex">
                                     <div style="padding-top:42px">
                                         <div style="padding-bottom:10px;padding-left:10px;">
                                             <span style="font-size:large;font-weight: bold">@counterparty?.FullName</span>
@@ -189,18 +188,22 @@
                                 </div>
                             </ContentTemplate>
                         </TabItem>
-                      
+
                         <TabItem>
                             <ChildContent>
                                 <TabHeader Text="Phones"></TabHeader>
                             </ChildContent>
                             <ContentTemplate>
                                 <div>
-                                    <SfGrid DataSource="@PhonesDataSource" 
+                                    <SfGrid DataSource="@PhonesDataSource"
                                             AllowSorting="true"
                                             Query="@(new Query().Where("CounterpartyId", "equal", counterparty?.Id))"
                                             Toolbar="@toolbarItems">
-                                        <GridEvents TValue="PhoneModel" OnActionBegin="ActionBeginPhoneHandler"></GridEvents>
+
+                                        <GridEvents TValue="PhoneModel"
+                                                    OnActionBegin="async args => await ActionBeginPhoneHandler(args, counterparty?.Id)">
+                                        </GridEvents>
+
                                         <GridEditSettings AllowAdding="true" AllowEditing="true" AllowDeleting="true" Mode="EditMode.Normal"></GridEditSettings>
                                         <GridColumns>
                                             <GridColumn Field=@nameof(PhoneModel.Number) HeaderText="Number"></GridColumn>
@@ -209,13 +212,13 @@
                                     </SfGrid>
                                 </div>
                             </ContentTemplate>
-                        </TabItem> 
-                       
+                        </TabItem>
+
                     </TabItems>
-                    
+
                 </SfTab>
             </div>
-               
+
         </DetailTemplate>
     </GridTemplates>
 
@@ -227,7 +230,7 @@
         <GridColumn Field=@nameof(CounterpartyModel.Description) HeaderText="Description" Visible="false"></GridColumn>
 
         <GridColumn Field=@nameof(CounterpartyModel.Supplier) HeaderText="Supplier" Width="150" DisplayAsCheckbox=@true TextAlign="TextAlign.Center" Type="ColumnType.Boolean"></GridColumn>
-         @* <SfCheckBox @bind-Checked="@IsChecked">Checkbox: @IsChecked</SfCheckBox> *@
+        @* <SfCheckBox @bind-Checked="@IsChecked">Checkbox: @IsChecked</SfCheckBox> *@
         <GridColumn Field=@nameof(CounterpartyModel.Seller) HeaderText="Seller" Width="150" DisplayAsCheckbox=@true TextAlign="TextAlign.Center" Type="ColumnType.Boolean"></GridColumn>
 
         <GridColumn Field=@nameof(CounterpartyModel.FormOfOwnership) HeaderText="FO"></GridColumn>
@@ -262,7 +265,6 @@
     public class FormOfOwnershipEnumItem : EnumItem<FormOfOwnership>;
 
     private List<PhoneModel> PhonesDataSource { get; set; } = new List<PhoneModel>();
-    private Guid? CurrentCounterpartyId;
 
     protected override async Task OnInitializedAsync()
     {
@@ -334,21 +336,21 @@
     public string GetHeader(CounterpartyModel? value)
     {
         return value?.Id == Guid.Empty
-            ? "New counterparty"
-            : $"Edit: '{value?.Name}'";
+    ? "New counterparty"
+    : $"Edit: '{value?.Name}'";
     }
 
     public void DataBoundHandler(BeforeDataBoundArgs<CounterpartyModel> args)
     {
         List<PhoneModel>? phones = args.Result?
-            .Where(c => c.Phones != null)
-            .SelectMany(c => c.Phones!.Select(p => new PhoneModel
-            {
-                Id = p.Id,
-                Number = p.Number,
-                CounterpartyId = c.Id
-            }))
-            .ToList();
+    .Where(c => c.Phones != null)
+    .SelectMany(c => c.Phones!.Select(p => new PhoneModel
+    {
+        Id = p.Id,
+        Number = p.Number,
+        CounterpartyId = c.Id
+    }))
+    .ToList();
 
         if (phones != null)
         {
@@ -356,14 +358,14 @@
         }
     }
 
-    public async void ActionBeginPhoneHandler(ActionEventArgs<PhoneModel> args)
+    public async Task ActionBeginPhoneHandler(ActionEventArgs<PhoneModel> args, Guid? counterpartyId)
     {
         if (args.RequestType.Equals(Syncfusion.Blazor.Grids.Action.Save))
         {
             if (args.Action == "Add")
             {
                 CreatePhoneRequest create = new CreatePhoneRequest((PhoneModel)args.Data!);
-                create.Phone.CounterpartyId = CurrentCounterpartyId;
+                create.Phone.CounterpartyId = counterpartyId;
                 await PhoneService.CreatePhone(create);
             }
             else if (args.Action == "Edit")
