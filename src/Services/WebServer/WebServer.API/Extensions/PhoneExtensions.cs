@@ -12,7 +12,8 @@ public static class PhoneLiteExtensions
         => new()
         {
             Id = phone.Id,
-            Number = phone.Number
+            Number = phone.Number,
+            PhoneNoteId = phone.PhoneNoteId,
         };
 }
 
@@ -29,6 +30,8 @@ public static class PhoneExtensions
         {
             Id = phone.Id,
             Number = phone.Number,
+            PhoneNoteId = phone.PhoneNoteId,
+            PhoneNoteName = phone.PhoneNote?.Name,
             CounterpartyId = phone.CounterpartyId,
             CounterpartyName = phone.Counterparty?.Name,
         };

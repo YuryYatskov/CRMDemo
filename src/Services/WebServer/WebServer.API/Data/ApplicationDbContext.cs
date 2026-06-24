@@ -8,4 +8,6 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
     public DbSet<Phone> Phones { get; set; }
 
+    public DbSet<PhoneNote> PhoneNotes { get; set; }
+
 }

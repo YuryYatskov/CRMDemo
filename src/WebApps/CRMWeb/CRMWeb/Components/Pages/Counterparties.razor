@@ -1,16 +1,17 @@
 ﻿@page "/counterparties"
+@rendermode InteractiveServer
+@attribute [StreamRendering]
+@inject IPhoneService PhoneService
+@using BuildingBlocks.Types.Enums
+@using CRMWeb.Extensions
+@using CRMWeb.Models.Abstractions
 @using CRMWeb.Models.Counterparties
 @using CRMWeb.Models.Phones
 @using CRMWeb.Services
 @using CRMWeb.Services.Counterparties
+@using CRMWeb.Services.PhoneNotes
 @using CRMWeb.Services.Phones
 @using System.Text.Json
-@using BuildingBlocks.Types.Enums
-@using CRMWeb.Models.Abstractions
-@using CRMWeb.Extensions
-@rendermode InteractiveServer
-@attribute [StreamRendering]
-@inject IPhoneService PhoneService
 
 <PageTitle>Counterparties</PageTitle>
 <h3>Counterparties</h3>
@@ -196,20 +197,30 @@
                             <ContentTemplate>
                                 <div>
                                     <SfGrid DataSource="@PhonesDataSource"
+                                            Height="200"
                                             AllowSorting="true"
-                                            Query="@(new Query().Where("CounterpartyId", "equal", counterparty?.Id))"
+                                            Query="@(new Query().Where("CounterpartyId", "equal", counterparty?.Id ?? Guid.Empty))"
                                             Toolbar="@toolbarItems">
-
                                         <GridEvents TValue="PhoneModel"
                                                     OnActionBegin="async args => await ActionBeginPhoneHandler(args, counterparty?.Id)">
                                         </GridEvents>
-
                                         <GridEditSettings AllowAdding="true" AllowEditing="true" AllowDeleting="true" Mode="EditMode.Normal"></GridEditSettings>
-                                        <GridColumns>
+                                         <GridColumns>
+                                            <GridForeignColumn HeaderText="Phone note" TValue="PhoneNoteModel"
+                                                               Field="@nameof(PhoneModel.PhoneNoteId)"
+                                                               ForeignKeyField="@nameof(PhoneNoteModel.Id)"
+                                                               ForeignKeyValue="@nameof(PhoneNoteModel.Name)"
+                                                               EditType="EditType.DropDownEdit">
+                                                <SfDataManager AdaptorInstance="@typeof(PhoneNoteAdaptor)"
+                                                               Adaptor="Adaptors.CustomAdaptor"
+                                                               CrossDomain="true">
+                                                </SfDataManager>
+                                            </GridForeignColumn>
                                             <GridColumn Field=@nameof(PhoneModel.Number) HeaderText="Number"></GridColumn>
-                                            <GridColumn Field=@nameof(PhoneModel.Id) HeaderText="Id" IsPrimaryKey="true" ValidationRules="@(new ValidationRules { Required = true })" TextAlign="@TextAlign.Left" HeaderTextAlign="@TextAlign.Left" Width="200" Visible="false"></GridColumn>
+                                            <GridColumn Field=@nameof(PhoneModel.Id) HeaderText="Id" IsPrimaryKey="true" ValidationRules="@(new ValidationRules { Required = true })" TextAlign="@TextAlign.Left" HeaderTextAlign="@TextAlign.Left" Width="200" Visible="false"></GridColumn>  
                                         </GridColumns>
                                     </SfGrid>
+
                                 </div>
                             </ContentTemplate>
                         </TabItem>
@@ -336,21 +347,22 @@
     public string GetHeader(CounterpartyModel? value)
     {
         return value?.Id == Guid.Empty
-    ? "New counterparty"
-    : $"Edit: '{value?.Name}'";
+            ? "New counterparty"
+            : $"Edit: '{value?.Name}'";
     }
 
     public void DataBoundHandler(BeforeDataBoundArgs<CounterpartyModel> args)
     {
         List<PhoneModel>? phones = args.Result?
-    .Where(c => c.Phones != null)
-    .SelectMany(c => c.Phones!.Select(p => new PhoneModel
-    {
-        Id = p.Id,
-        Number = p.Number,
-        CounterpartyId = c.Id
-    }))
-    .ToList();
+            .Where(c => c.Phones != null)
+            .SelectMany(c => c.Phones!.Select(p => new PhoneModel
+            {
+                Id = p.Id,
+                Number = p.Number,
+                PhoneNoteId = p.PhoneNoteId,
+                CounterpartyId = c.Id
+            }))
+            .ToList();
 
         if (phones != null)
         {
@@ -360,24 +372,77 @@
 
     public async Task ActionBeginPhoneHandler(ActionEventArgs<PhoneModel> args, Guid? counterpartyId)
     {
+        string? errordetails = null;
+
         if (args.RequestType.Equals(Syncfusion.Blazor.Grids.Action.Save))
         {
             if (args.Action == "Add")
             {
                 CreatePhoneRequest create = new CreatePhoneRequest((PhoneModel)args.Data!);
                 create.Phone.CounterpartyId = counterpartyId;
-                await PhoneService.CreatePhone(create);
+                var response = await PhoneService.CreatePhone(create);
+                if (!response.IsSuccessStatusCode)
+                {
+                    Console.WriteLine($"API Error (insert): {response.StatusCode} - {response.Error?.Message} - {response.Error?.Content}");
+
+                    errordetails = response.Error?.Content;
+                    if (errordetails!.Contains("detail"))
+                    {
+                        var detail = JsonDocument.Parse(errordetails).RootElement.GetProperty("detail").GetString();
+                        ErrorDetails = detail!;
+                    }
+                    else
+                    {
+                        ErrorDetails = errordetails;
+                    }
+
+                    // throw new Exception(response.Error?.Content, response.Error);
+                }
             }
             else if (args.Action == "Edit")
             {
                 UpdatePhoneRequest update = new UpdatePhoneRequest((PhoneModel)args.Data!);
-                await PhoneService.UpdatePhone(update);
+                var response = await PhoneService.UpdatePhone(update);
+                if (!response.IsSuccessStatusCode)
+                {
+                    Console.WriteLine($"API Error (insert): {response.StatusCode} - {response.Error?.Message} - {response.Error?.Content}");
+
+                    errordetails = response.Error?.Content;
+                    if (errordetails!.Contains("detail"))
+                    {
+                        var detail = JsonDocument.Parse(errordetails).RootElement.GetProperty("detail").GetString();
+                        ErrorDetails = detail!;
+                    }
+                    else
+                    {
+                        ErrorDetails = errordetails;
+                    }
+
+                    // throw new Exception(response.Error?.Content, response.Error);
+                }
             }
         }
         else if (args.RequestType.Equals(Syncfusion.Blazor.Grids.Action.Delete))
         {
             var id = ((PhoneModel)args.Data!).Id;
-            await PhoneService.DeletePhone(id);
+            var response = await PhoneService.DeletePhone(id);
+            if (!response.IsSuccessStatusCode)
+            {
+                Console.WriteLine($"API Error (insert): {response.StatusCode} - {response.Error?.Message} - {response.Error?.Content}");
+
+                errordetails = response.Error?.Content;
+                if (errordetails!.Contains("detail"))
+                {
+                    var detail = JsonDocument.Parse(errordetails).RootElement.GetProperty("detail").GetString();
+                    ErrorDetails = detail!;
+                }
+                else
+                {
+                    ErrorDetails = errordetails;
+                }
+
+                // throw new Exception(response.Error?.Content, response.Error);
+            }
         }
     }
 }

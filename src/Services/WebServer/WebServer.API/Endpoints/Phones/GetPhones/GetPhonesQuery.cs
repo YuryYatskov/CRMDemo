@@ -20,6 +20,7 @@ public class GetPhonesHandler(ApplicationDbContext dbContext)
         var phones = await dbContext.Phones.AsNoTracking()
             .Skip(pageSize * pageIndex)
             .Take(pageSize)
+            .Include(p => p.PhoneNote)
             .Include(c => c.Counterparty)
             .OrderBy(o => o.Number)
             .ToListAsync(cancellationToken);

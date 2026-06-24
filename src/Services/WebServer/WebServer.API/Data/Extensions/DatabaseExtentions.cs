@@ -17,6 +17,7 @@ public static class DatabaseExtentions
 
         IEnumerable<Counterparty>? counterparties = null;
         IEnumerable<Phone>? phones = null;
+        IEnumerable<PhoneNote>? phoneNotes = null;
 
         if (!await context.Products.AnyAsync())
         {
@@ -31,11 +32,19 @@ public static class DatabaseExtentions
             isSave = true;
         }
 
+
+        if (!await context.PhoneNotes.AnyAsync())
+        {
+            phoneNotes = InitialData.GetPreconfiguredPhoneNotes();
+            await context.PhoneNotes.AddRangeAsync(phoneNotes);
+            isSave = true;
+        }
+
         if (!await context.Phones.AnyAsync())
         {
+            phoneNotes = phoneNotes?.Count() > 1 ? phoneNotes : InitialData.GetPreconfiguredPhoneNotes();
             counterparties = counterparties?.Count() > 1 ? counterparties : InitialData.Counterparties;
-            //context.Counterparties.AttachRange(counterparties);
-            phones = InitialData.GetPreconfiguredPhones(counterparties);
+            phones = InitialData.GetPreconfiguredPhones(phoneNotes, counterparties);
             await context.Phones.AddRangeAsync(phones);
             isSave = true;
         }

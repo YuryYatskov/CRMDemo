@@ -1,47 +1,39 @@
-﻿@page "/phones"
+﻿@page "/phone-notes"
 @rendermode InteractiveServer
 @attribute [StreamRendering]
-@using CRMWeb.Models.Counterparties
 @using CRMWeb.Models.Phones
-@using CRMWeb.Services
-@using CRMWeb.Services.Counterparties
 @using CRMWeb.Services.PhoneNotes
-@using CRMWeb.Services.Phones
-@using Syncfusion.Blazor.Data
-@using Syncfusion.Blazor.DropDowns
-@using Syncfusion.Blazor.Inputs
-@using System.Text.Json
 
-<PageTitle>Phones</PageTitle>
+<PageTitle>Phone notes</PageTitle>
 
-<h3>Phones</h3>
+<h3>Phone notes</h3>
 
 <span class="error">@ErrorDetails</span>
 
-<SfGrid TValue=PhoneModel" @ref="PhoneGrid"
+<SfGrid TValue=PhoneNoteModel" @ref="PhoneNoteGrid"
         AllowPaging="true" AllowSorting="true" AllowFiltering="true" AllowGrouping="true"
         ShowColumnMenu="true" AllowResizing="true" AllowReordering="true"
         Toolbar="@toolbar">
-    <GridEvents TValue="PhoneModel" OnActionFailure="@HandleActionFailure" OnActionBegin="@HandleActionBegin"></GridEvents>
+    <GridEvents TValue="PhoneNoteModel" OnActionFailure="@HandleActionFailure" OnActionBegin="@HandleActionBegin"></GridEvents>
     <GridPageSettings PageSize="6"></GridPageSettings>
-    <SfDataManager AdaptorInstance="@typeof(PhoneAdaptor)" Adaptor="Adaptors.CustomAdaptor"></SfDataManager>
+    <SfDataManager AdaptorInstance="@typeof(PhoneNoteAdaptor)" Adaptor="Adaptors.CustomAdaptor"></SfDataManager>
     @* <GridGroupSettings ShowGroupedColumn="true"></GridGroupSettings> *@
     <GridFilterSettings Type="Syncfusion.Blazor.Grids.FilterType.Menu"></GridFilterSettings>
 
     <GridEditSettings AllowAdding="true" AllowEditing="true" AllowDeleting="true" Mode="EditMode.Dialog" Dialog="DialogParams">
         <HeaderTemplate>
             @{
-                var DialogHeader = GetHeader((context as PhoneModel));
+                var DialogHeader = GetHeader((context as PhoneNoteModel));
                 <span>@DialogHeader</span>
             }
         </HeaderTemplate>
 
         <Template>
             @{
-                var Phone = (context as PhoneModel);
-                var IdValue = (Phone!.Id).ToString() ?? string.Empty;
+                var PhoneNote = (context as PhoneNoteModel);
+                var IdValue = (PhoneNote!.Id).ToString() ?? string.Empty;
 
-                <FluentValidator TValidator="PhoneValidator" />
+                <FluentValidator TValidator="PhoneNoteValidator" />
                 <ValidationSummary />
 
                 <span class="error">@ErrorDialodDetails</span>
@@ -50,41 +42,9 @@
                     <div class="row">
                         <div class="form-group col-md-12">
                             <SfTextBox ID="Name"
-                                       @bind-Value=@(Phone.Number)
+                                       @bind-Value=@(PhoneNote.Name)
                                        FloatLabelType="FloatLabelType.Always"
-                                       Placeholder="Number"></SfTextBox>
-                        </div>
-                    </div>
-                </div>
-
-                <div>
-                    <div class="row">
-                        <div class="form-group col-md-12">
-                            <SfDropDownList @bind-Value=@(Phone.PhoneNoteId)
-                                            FloatLabelType="FloatLabelType.Always"
-                                            TValue="Guid" Placeholder="Phone note" TItem="PhoneNoteModel">
-                                <Syncfusion.Blazor.Data.SfDataManager AdaptorInstance="@typeof(PhoneNoteAdaptor)"
-                                                                      Adaptor="Adaptors.CustomAdaptor"
-                                                                      CrossDomain="true">
-                                </Syncfusion.Blazor.Data.SfDataManager>
-                                <DropDownListFieldSettings Text="Name" Value="Id"></DropDownListFieldSettings>
-                            </SfDropDownList>
-                        </div>
-                    </div>
-                </div>
-
-                <div>
-                    <div class="row">
-                        <div class="form-group col-md-12">
-                            <SfDropDownList @bind-Value=@(Phone.CounterpartyId)
-                                            FloatLabelType="FloatLabelType.Always"
-                                            TValue="Guid?" Placeholder="Counterparty" TItem="CounterpartyModel">
-                                <Syncfusion.Blazor.Data.SfDataManager AdaptorInstance="@typeof(CounterpartyAdaptor)"
-                                                                      Adaptor="Adaptors.CustomAdaptor"
-                                                                      CrossDomain="true">
-                                </Syncfusion.Blazor.Data.SfDataManager>
-                                <DropDownListFieldSettings Text="Name" Value="Id"></DropDownListFieldSettings>
-                            </SfDropDownList>
+                                       Placeholder="Name"></SfTextBox>
                         </div>
                     </div>
                 </div>
@@ -106,10 +66,8 @@
     </GridEditSettings>
 
     <GridColumns>
-        <GridColumn Field=@nameof(PhoneModel.Number) HeaderText="Number"></GridColumn>
-        <GridColumn Field=@nameof(PhoneModel.PhoneNoteName) HeaderText="Phone note"></GridColumn>
-        <GridColumn Field=@nameof(PhoneModel.CounterpartyName) HeaderText="Counterpart"></GridColumn>
-        <GridColumn Field=@nameof(PhoneModel.Id) HeaderText="Id" IsPrimaryKey="true" ValidationRules="@(new ValidationRules { Required = true })" TextAlign="@TextAlign.Left" HeaderTextAlign="@TextAlign.Left" Width="200" Visible="false"></GridColumn>
+        <GridColumn Field=@nameof(PhoneNoteModel.Name) HeaderText="Name"></GridColumn>
+        <GridColumn Field=@nameof(PhoneNoteModel.Id) HeaderText="Id" IsPrimaryKey="true" ValidationRules="@(new ValidationRules { Required = true })" TextAlign="@TextAlign.Left" HeaderTextAlign="@TextAlign.Left" Width="200" Visible="false"></GridColumn>
     </GridColumns>
 </SfGrid>
 @* 
@@ -127,12 +85,12 @@
     private string ErrorDetails = string.Empty;
     private string ErrorDialodDetails = string.Empty;
 
-    private SfGrid<PhoneModel> PhoneGrid { get; set; } = new();
+    private SfGrid<PhoneNoteModel> PhoneNoteGrid { get; set; } = new();
     private DialogSettings DialogParams = new DialogSettings { MinHeight = "400px", Width = "400px" };
 
     private List<object> toolbar = new List<object> { "Add", "Edit", "Delete", "Search" };
 
-    private List<PhoneModel> PhoneData { get; set; } = [];
+    private List<PhoneNoteModel> PhoneNoteData { get; set; } = [];
 
     protected override async Task OnInitializedAsync()
     {
@@ -195,22 +153,23 @@
         StateHasChanged();
     }
 
-    public void HandleActionBegin(ActionEventArgs<PhoneModel> args)
+    public void HandleActionBegin(ActionEventArgs<PhoneNoteModel> args)
     {
         ErrorDetails = string.Empty;
         ErrorDialodDetails = string.Empty;
     }
 
-    // private bool IsValid(PhoneModel data)
+    // private bool IsValid(PhoneNoteModel data)
     // {
     //     return !string.IsNullOrWhiteSpace(data.Name) && !string.IsNullOrWhiteSpace(data.ImageFile);
     // }
 
-    public string GetHeader(PhoneModel? value)
+    public string GetHeader(PhoneNoteModel? value)
     {
         return value?.Id == Guid.Empty
             ? "New unit of measurement"
-            : $"Edit: '{value?.Number}'";
+            : $"Edit: '{value?.Name}'";
     }
 }
+
 

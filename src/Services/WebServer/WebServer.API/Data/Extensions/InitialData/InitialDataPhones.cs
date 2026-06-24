@@ -3,6 +3,7 @@
 public static partial class InitialData
 {
     public static IEnumerable<Phone> GetPreconfiguredPhones(
+        IEnumerable<PhoneNote> phoneNotes,
         IEnumerable<Counterparty> counterparties)
     {
         Random rnd = new();
@@ -14,40 +15,23 @@ public static partial class InitialData
 
         foreach (Counterparty counterparty in shuffledList)
         {
-            // First
-            long number = 380441002001 + ++i;
-            Phone phone = new()
+            foreach (PhoneNote note in phoneNotes)
             {
-                Id = Guid.NewGuid(),
-                Number = $"+{number}",
-                CounterpartyId = counterparty.Id,
-                Counterparty = counterparty,
-            };
+                // First
+                long number = 380441002001 + ++i;
+                Phone phone = new()
+                {
+                    Id = Guid.NewGuid(),
+                    Number = $"+{number}",
+                    PhoneNoteId = note.Id,
+                    PhoneNote = note,
+                    CounterpartyId = counterparty.Id,
+                    Counterparty = counterparty,
+                };
 
-            phoneList.Add(phone);
+                phoneList.Add(phone);
 
-            // Second
-            number = 380671003001 + ++i;
-            phone = new()
-            {
-                Id = Guid.NewGuid(),
-                Number = $"+{number}",
-                CounterpartyId = counterparty.Id,
-                Counterparty = counterparty,
-            };
-
-            phoneList.Add(phone);
-
-            // Three
-            number = 380501005001 + ++i;
-            phone = new()
-            {
-                Id = Guid.NewGuid(),
-                Number = $"+{number}",
-                CounterpartyId = counterparty.Id,
-                Counterparty = counterparty,
-            };
-            phoneList.Add(phone);  
+            }
         }
 
         return phoneList;
