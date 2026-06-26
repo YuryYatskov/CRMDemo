@@ -196,12 +196,6 @@
                             </ChildContent>
                             <ContentTemplate>
                                 <div>
-
-                                   @*  <SfDataManager Adaptor="Adaptors.CustomAdaptor"
-                                                   AdaptorInstance="@typeof(PhoneNoteAdaptor)"
-                                                   @ref="phoneNoteManager">
-                                    </SfDataManager> *@
-
                                     <SfGrid DataSource="@PhonesDataSource"
                                             Height="200"
                                             AllowSorting="true"
@@ -211,17 +205,14 @@
                                                     OnActionBegin="async args => await ActionBeginPhoneHandler(args, counterparty?.Id)">
                                         </GridEvents>
                                         <GridEditSettings AllowAdding="true" AllowEditing="true" AllowDeleting="true" Mode="EditMode.Normal"></GridEditSettings>
-                                         <GridColumns>
+                                        <GridColumns>
                                             <GridForeignColumn HeaderText="Phone note" TValue="PhoneNoteModel"
                                                                Field="@nameof(PhoneModel.PhoneNoteId)"
                                                                ForeignKeyField="@nameof(PhoneNoteModel.Id)"
                                                                ForeignKeyValue="@nameof(PhoneNoteModel.Name)"
-                                                               EditType="EditType.DropDownEdit"
-                                                              
-                                                               >
-                                                @*  DataSource="@phoneNoteManager" *@
+                                                               EditType="EditType.DropDownEdit">
                                                 <ChildContent>
-                                                    <SfDataManager AdaptorInstance="@typeof(PhoneNoteAdaptor)"
+                                                    <SfDataManager @ref="PhoneNoteRef" AdaptorInstance="@typeof(PhoneNoteAdaptor)"
                                                                    Adaptor="Adaptors.CustomAdaptor"
                                                                    CrossDomain="true">
                                                     </SfDataManager>
@@ -232,9 +223,11 @@
                                                     }
                                                     <SfDropDownList @ref="PhoneNoteCombo" TValue="Guid" TItem="PhoneNoteModel"
                                                                     Placeholder="Select note" AllowFiltering="true"
-                                                                    DataSource="@PhoneNoteCustomItems"
-                                                                    Value="@(row.PhoneNoteId)"
-                                                                    ValueChanged="@( (Guid v) => row.PhoneNoteId = v )">
+                                                                    @bind-Value="row.PhoneNoteId">
+                                                        <SfDataManager AdaptorInstance="@typeof(PhoneNoteAdaptor)"
+                                                                       Adaptor="Adaptors.CustomAdaptor"
+                                                                       CrossDomain="true">
+                                                        </SfDataManager>
                                                         <DropDownListFieldSettings Text="Name" Value="Id"></DropDownListFieldSettings>
                                                         <DropDownListEvents TValue="Guid" TItem="PhoneNoteModel" Filtering="@OnPhoneNoteFiltering"></DropDownListEvents>
                                                         <DropDownListTemplates TItem="PhoneNoteModel">
@@ -249,7 +242,7 @@
                                                 </EditTemplate>
                                             </GridForeignColumn>
                                             <GridColumn Field=@nameof(PhoneModel.Number) HeaderText="Number"></GridColumn>
-                                            <GridColumn Field=@nameof(PhoneModel.Id) HeaderText="Id" IsPrimaryKey="true" ValidationRules="@(new ValidationRules { Required = true })" TextAlign="@TextAlign.Left" HeaderTextAlign="@TextAlign.Left" Width="200" Visible="false"></GridColumn>  
+                                            <GridColumn Field=@nameof(PhoneModel.Id) HeaderText="Id" IsPrimaryKey="true" ValidationRules="@(new ValidationRules { Required = true })" TextAlign="@TextAlign.Left" HeaderTextAlign="@TextAlign.Left" Width="200" Visible="false"></GridColumn>
                                         </GridColumns>
                                     </SfGrid>
 
@@ -295,7 +288,7 @@
 @code {
     private string ErrorDetails = string.Empty;
     private string ErrorDialodDetails = string.Empty;
-
+    private SfDataManager? PhoneNoteRef;
     private SfGrid<CounterpartyModel> CounterpartyGrid { get; set; } = new();
     private DialogSettings DialogParams = new DialogSettings { MinHeight = "400px", Width = "420px" };
     private DialogSettings DialogParamsItems = new DialogSettings { Height = "200px" };
@@ -480,8 +473,8 @@
 
     #region add-items-drop-downs
 
-    private SfDropDownList<Guid, PhoneNoteModel> PhoneNoteCombo;
-    private string PhoneNoteCustom { get; set; }
+    private SfDropDownList<Guid, PhoneNoteModel>? PhoneNoteCombo;
+    private string? PhoneNoteCustom { get; set; }
     private List<PhoneNoteModel> PhoneNoteCustomItems { get; set; } = new List<PhoneNoteModel>();
 
     private DataManager phoneNoteManager = new DataManager();
@@ -500,11 +493,15 @@
 
     private async Task AddPhoneNote()
     {
-        var customData = new PhoneNoteModel() { Id = Guid.NewGuid(), Name = PhoneNoteCustom ?? string.Empty };
+        var customData = new PhoneNoteModel() { Name = PhoneNoteCustom ?? string.Empty };
+        var savedPhoneNote = await PhoneNoteRef?.InsertAsync<CreatePhoneNoteResponse>(customData)!;
         if (PhoneNoteCombo is not null)
         {
+            var changedData = (CreatePhoneNoteResponse)savedPhoneNote;
+            customData.Id = changedData.Id;
             await PhoneNoteCombo.AddItemsAsync(new List<PhoneNoteModel> { customData });
             PhoneNoteCustomItems.Add(customData);
+
             await PhoneNoteCombo.RefreshDataAsync();
             await PhoneNoteCombo.HidePopupAsync();
             PhoneNoteCombo.Value = customData.Id;
